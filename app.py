@@ -102,15 +102,81 @@ def generate_bill():
             return render_template('bill_generated.html', u=user_username, l='Location Name', p='Price Value')
 
 
-@app.route('/book_turf', methods=['POST'])
+# @app.route('/book_turf', methods=['GET', 'POST'])
+# def book_turf():
+#     if request.method == 'POST':
+#         location_name = request.form.get('loc')
+#         if location_name:
+#             # Retrieve user ID from the database
+#             user_id = get_user_id(session.get('username'))
+#
+#             if user_id:
+#                 # Insert booking into the database
+#                 date = "your_date_value"  # Replace with the actual date
+#                 time = "your_time_value"  # Replace with the actual time
+#                 payment_status = "Pending"  # Assuming it's pending initially
+#
+#                 # Call the function to insert booking details into the user_bookings table
+#                 insert_booking_into_database(user_id, location_name, date, time, payment_status)
+#
+#                 # Redirect to the user's booking history page
+#                 return redirect(url_for('user_booking_history'))
+#
+#     # Render the book_turf page for GET requests or if form submission is not valid
+#     return render_template('book_turf.html')
+
+
+def get_user_id(username):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+    result = cursor.fetchone()
+    if result:
+        return result[0]
+    return None
+
+def get_location_id(location_name):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM locations WHERE name = ?", (location_name,))
+    result = cursor.fetchone()
+    if result:
+        return result[0]
+    return None
+
+@app.route('/book_turf', methods=['GET', 'POST'])
 def book_turf():
     if request.method == 'POST':
-        location_name = request.form['loc']
-        if location_name:
-            db = get_db()
-            cursor = db.cursor()
-            # Add logic to handle turf booking
-            return render_template('book_turf.html', loc=location_name)
+        location_name = request.form.get('location_name')
+        booking_date = request.form.get('booking_date')
+        booking_time = request.form.get('booking_time')
+        if location_name and booking_date and booking_time:
+            user_id = get_user_id("user1")  # Replace "user1" with actual username obtained from session or login
+            location_id = get_location_id(location_name)
+            if user_id and location_id:
+                db = get_db()
+                cursor = db.cursor()
+                cursor.execute("INSERT INTO user_bookings (user_id, location_id, date, time, payment_status) VALUES (?, ?, ?, ?, ?)",
+                               (user_id, location_id, booking_date, booking_time, 'Pending'))
+                db.commit()
+                return redirect(url_for('home_user'))
+    else:
+        location_name = request.args.get('location_name')
+        return render_template('book_turf.html', location_name=location_name)
+def insert_booking_into_database(location_name, user_id):
+    db = get_db()
+    cursor = db.cursor()
+    # Modify the query based on your database schema
+    cursor.execute("INSERT INTO user_bookings (user_id, location) VALUES (?, ?)", (user_id, location_name))
+    db.commit()
+
+
+def get_user_id(username):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+    result = cursor.fetchone()
+    return result['id'] if result else None
 
 
 @app.route('/booking_history', methods=['POST'])
@@ -127,11 +193,18 @@ def booking_history():
 
 @app.route('/check_availability', methods=['GET'])
 def check_availability():
-    db = get_db()
-    cursor = db.cursor()
-    # Add logic to fetch available turf locations
-    return render_template('check_availability.html',
-                           u=['Location1', 'Location2'])  # Example data, replace with actual data
+    if session.get('user_type') == 'user':
+        # Fetch available turf locations from the database
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT DISTINCT location_id FROM prices")
+        available_locations_data = cursor.fetchall()
+
+        available_locations = [get_location_name(row['location_id']) for row in available_locations_data]
+
+        return render_template('check_availability.html', available_locations=available_locations)
+
+    return render_template('login.html', error='Unauthorized access.')
 
 
 @app.route('/check_rates', methods=['GET', 'POST'])
@@ -143,7 +216,8 @@ def check_rates():
             # Fetch rates for the specified location from the database
             db = get_db()
             cursor = db.cursor()
-            cursor.execute("SELECT location_id, price FROM prices WHERE location_id = ?", (get_location_id(location_name),))
+            cursor.execute("SELECT location_id, price FROM prices WHERE location_id = ?",
+                           (get_location_id(location_name),))
             prices = cursor.fetchall()
             rates = [{'location': get_location_name(row['location_id']), 'price': row['price']} for row in prices]
 
@@ -153,29 +227,25 @@ def check_rates():
     return render_template('check_rates.html')
 
 
-
 @app.route('/check_turf', methods=['GET'])
 def check_turf():
-    db = get_db()
-    cursor = db.cursor()
-    # Add logic to fetch turf locations and prices
-    return render_template('check_turf.html',
-                           p=['Location1: $10', 'Location2: $15'])  # Example data, replace with actual data
+    if session.get('user_type') == 'user':
+        # Fetch turf locations and prices from the database
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT location_id, price FROM prices")
+        turf_data = cursor.fetchall()
+
+        turf_list = [{'location': get_location_name(row['location_id']), 'price': row['price']} for row in turf_data]
+
+        return render_template('check_turf.html', turf_list=turf_list)
+
+    return render_template('login.html', error='Unauthorized access.')
 
 
 @app.route('/confirm_booking', methods=['POST'])
 def confirm_booking():
-    if request.method == 'POST':
-        user_username = request.form['usr']
-        location_name = request.form['loc']
-        if user_username and location_name:
-            db = get_db()
-            cursor = db.cursor()
-            # Add logic to confirm booking
-            return render_template('confirm_booking.html', general=['Request1', 'Request2'],
-                                   mine=['Request1'])  # Example data, replace with actual data
-
-
+    return render_template('confirm_booking.html')
 
 # ... (previous code)
 
@@ -286,11 +356,32 @@ def home_manager():
     return render_template('login.html', error='Unauthorized access.')
 
 
-@app.route('/home_user', methods=['POST'])
+# Modify the home_user route
+# Modify the home_user route for debugging
+@app.route('/home_user', methods=['GET', 'POST'])
 def home_user():
-    if session.get('user_type') == 'user':
-        return render_template('home_user.html', email='user@example.com')
-    return render_template('login.html', error='Unauthorized access.')
+    if request.method == 'POST':
+        action = request.form.get('submit_button')
+
+        if action == 'Check turf':
+            return redirect(url_for('check_turf'))
+        elif action == 'Check rates':
+            return redirect(url_for('check_rates'))
+        elif action == 'Check availability':
+            return redirect(url_for('check_availability'))
+        elif action == 'Book a turf':
+            return redirect(url_for('book_turf'))
+        elif action == 'My history':
+            return redirect(url_for('user_booking_history'))
+        elif action == 'View visits':
+            return redirect(url_for('view_visits'))
+        elif action == 'Contact':
+            return redirect(url_for('contact'))
+        elif action == 'Log out':
+            return redirect(url_for('logout'))
+
+    # Render the template for the initial GET request or if the form submission is not valid
+    return render_template('home_user.html', email=session.get('email'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -435,6 +526,52 @@ def check_credentials(user_type, username, password):
     result = cursor.fetchone()
     return result is not None
 
+
+# ... (Previous code)
+
+# Add new route for user registration
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username and password:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+            db.commit()
+            return redirect(url_for('login'))
+    return render_template('register.html')
+
+
+# Add new route for user booking history
+# @app.route('/user_booking_history', methods=['GET'])
+# def user_booking_history():
+#     if session.get('user_type') == 'user':
+#         # Fetch user's booking history from the database
+#         db = get_db()
+#         cursor = db.cursor()
+#         cursor.execute("SELECT * FROM user_bookings WHERE user_id = ?", (session['user_id'],))
+#         bookings = cursor.fetchall()
+#         return render_template('user_booking_history.html', bookings=bookings)
+#     return render_template('login.html', error='Unauthorized access.')
+# Update the user_booking_history route
+@app.route('/user_booking_history', methods=['GET'])
+def user_booking_history():
+    user_id = session.get('user_id')
+
+    if user_id and session.get('user_type') == 'user':
+        # Fetch user's booking history from the database
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM user_bookings WHERE user_id = ?", (user_id,))
+        bookings = cursor.fetchall()
+        return render_template('user_booking_history.html', bookings=bookings)
+
+    return render_template('user_booking_history.html', error='Unauthorized access.')
+
+
+# ... (Previous code)
 
 # ... (remaining code)
 

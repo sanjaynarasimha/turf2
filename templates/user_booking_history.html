@@ -1,0 +1,42 @@
+<!-- templates/user_booking_history.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking History</title>
+    <link rel="stylesheet" type="text/css" href="/static/turf.css">
+</head>
+
+<body>
+    <div class="login" style="margin:auto; top: 50%; left: 50%;">
+        <h1>Booking History</h1>
+        {% if bookings %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Location</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Payment Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                <tr>
+                    <td>{{ booking.location }}</td>
+                    <td>{{ booking.date }}</td>
+                    <td>{{ booking.time }}</td>
+                    <td>{{ booking.payment_status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No booking history available.</p>
+        {% endif %}
+    </div>
+</body>
+
+</html>

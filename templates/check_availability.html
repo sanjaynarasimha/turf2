@@ -1,15 +1,26 @@
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Check availability</title>
-    <link rel="stylesheet" type= "text/css" href="{{ url_for('static', filename='/turf.css') }}">
-</head>
 <body>
-<div class="login" style="margin:auto;
-top: 50%; left: 50%;">
-<h1>Available turf locations</h1>
-    <p>{{u}}</p>
-</div>
+<header>
+	<title>ONLINE SPORTS TURF PLAYGROUND BOOKING SYSTEM</title>
+	<h1 style="color:white;">SPORTS TURF PLAYGROUND BOOKING SYSTEM</h1>
+	<h2 style="color:white;">Hello, User</h2>
+</header>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='/turf.css') }}">
+<form action="{{ url_for('home_user') }}" method="POST">
+    <input type="submit" name="submit_button" value="Check availability"> <br>
+    <!-- other buttons... -->
+</form>
+
+{% if available_locations %}
+    <h3>Available Turf Locations:</h3>
+    <ul>
+        {% for location in available_locations %}
+            <li>{{ location }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No available locations.</p>
+{% endif %}
+
 </body>
 </html>

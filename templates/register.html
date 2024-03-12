@@ -1,0 +1,23 @@
+<!-- templates/register.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" type="text/css" href="/static/turf.css">
+</head>
+
+<body>
+    <form method="POST" action="/register">
+        <div class="login" style="margin:auto; top: 50%; left: 50%;">
+            <h1>Register</h1>
+            <input type="text" class="login-field" value="" placeholder="Enter your username" name="username" required>
+            <input type="password" class="login-field" value="" placeholder="Enter your password" name="password" required>
+            <input type="submit" name="submit_button" value="Register" class="button">
+        </div>
+    </form>
+</body>
+
+</html>
